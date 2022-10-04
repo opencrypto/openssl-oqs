@@ -1587,7 +1587,7 @@ static int pkey_oqs_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     switch (type) {
     case EVP_PKEY_CTRL_MD:
         /* NULL allowed as digest */
-        if (p2 == NULL) {
+        if (p2 == NULL || (const EVP_MD *)p2 == EVP_md_null()) {
             return 1;
 	}
 
