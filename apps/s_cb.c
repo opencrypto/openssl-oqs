@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -75,22 +75,28 @@ int verify_callback(int ok, X509_STORE_CTX *ctx)
     }
     switch (err) {
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-        BIO_puts(bio_err, "issuer= ");
-        X509_NAME_print_ex(bio_err, X509_get_issuer_name(err_cert),
-                           0, get_nameopt());
-        BIO_puts(bio_err, "\n");
+        if (err_cert != NULL) {
+            BIO_puts(bio_err, "issuer= ");
+            X509_NAME_print_ex(bio_err, X509_get_issuer_name(err_cert),
+                               0, get_nameopt());
+            BIO_puts(bio_err, "\n");
+        }
         break;
     case X509_V_ERR_CERT_NOT_YET_VALID:
     case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-        BIO_printf(bio_err, "notBefore=");
-        ASN1_TIME_print(bio_err, X509_get0_notBefore(err_cert));
-        BIO_printf(bio_err, "\n");
+        if (err_cert != NULL) {
+            BIO_printf(bio_err, "notBefore=");
+            ASN1_TIME_print(bio_err, X509_get0_notBefore(err_cert));
+            BIO_printf(bio_err, "\n");
+        }
         break;
     case X509_V_ERR_CERT_HAS_EXPIRED:
     case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-        BIO_printf(bio_err, "notAfter=");
-        ASN1_TIME_print(bio_err, X509_get0_notAfter(err_cert));
-        BIO_printf(bio_err, "\n");
+        if (err_cert != NULL) {
+            BIO_printf(bio_err, "notAfter=");
+            ASN1_TIME_print(bio_err, X509_get0_notAfter(err_cert));
+            BIO_printf(bio_err, "\n");
+        }
         break;
     case X509_V_ERR_NO_EXPLICIT_POLICY:
         if (!verify_args.quiet)
@@ -284,40 +290,36 @@ static const char *get_sigtype(int nid)
         return "Falcon-1024";
     case NID_p521_falcon1024:
         return "ECDSA p521 - Falcon-1024";
-    case NID_picnicl1full:
-        return "Picnic L1 full";
-    case NID_p256_picnicl1full:
-        return "ECDSA p256 - Picnic L1 full";
-    case NID_rsa3072_picnicl1full:
-        return "RSA3072 - Picnic L1 full";
-    case NID_picnic3l1:
-        return "Picnic3 L1";
-    case NID_p256_picnic3l1:
-        return "ECDSA p256 - Picnic3 L1";
-    case NID_rsa3072_picnic3l1:
-        return "RSA3072 - Picnic3 L1";
-    case NID_rainbowVclassic:
-        return "Rainbow-V-Classic";
-    case NID_p521_rainbowVclassic:
-        return "ECDSA p521 - Rainbow-V-Classic";
     case NID_sphincsharaka128frobust:
         return "SPHINCS+-Haraka-128f-robust";
     case NID_p256_sphincsharaka128frobust:
         return "ECDSA p256 - SPHINCS+-Haraka-128f-robust";
     case NID_rsa3072_sphincsharaka128frobust:
         return "RSA3072 - SPHINCS+-Haraka-128f-robust";
+    case NID_sphincsharaka128fsimple:
+        return "SPHINCS+-Haraka-128f-simple";
+    case NID_p256_sphincsharaka128fsimple:
+        return "ECDSA p256 - SPHINCS+-Haraka-128f-simple";
+    case NID_rsa3072_sphincsharaka128fsimple:
+        return "RSA3072 - SPHINCS+-Haraka-128f-simple";
     case NID_sphincssha256128frobust:
         return "SPHINCS+-SHA256-128f-robust";
     case NID_p256_sphincssha256128frobust:
         return "ECDSA p256 - SPHINCS+-SHA256-128f-robust";
     case NID_rsa3072_sphincssha256128frobust:
         return "RSA3072 - SPHINCS+-SHA256-128f-robust";
-    case NID_sphincsshake256128frobust:
-        return "SPHINCS+-SHAKE256-128f-robust";
-    case NID_p256_sphincsshake256128frobust:
-        return "ECDSA p256 - SPHINCS+-SHAKE256-128f-robust";
-    case NID_rsa3072_sphincsshake256128frobust:
-        return "RSA3072 - SPHINCS+-SHAKE256-128f-robust";
+    case NID_sphincssha256128ssimple:
+        return "SPHINCS+-SHA256-128s-simple";
+    case NID_p256_sphincssha256128ssimple:
+        return "ECDSA p256 - SPHINCS+-SHA256-128s-simple";
+    case NID_rsa3072_sphincssha256128ssimple:
+        return "RSA3072 - SPHINCS+-SHA256-128s-simple";
+    case NID_sphincsshake256128fsimple:
+        return "SPHINCS+-SHAKE256-128f-simple";
+    case NID_p256_sphincsshake256128fsimple:
+        return "ECDSA p256 - SPHINCS+-SHAKE256-128f-simple";
+    case NID_rsa3072_sphincsshake256128fsimple:
+        return "RSA3072 - SPHINCS+-SHAKE256-128f-simple";
 ///// OQS_TEMPLATE_FRAGMENT_SIG_NAME_STR_END
     default:
         return NULL;
@@ -480,15 +482,6 @@ static const char* OQS_CURVE_ID_NAME_STR(int id) {
   case 0x023A: return "kyber512";
   case 0x023C: return "kyber768";
   case 0x023D: return "kyber1024";
-  case 0x0214: return "ntru_hps2048509";
-  case 0x0215: return "ntru_hps2048677";
-  case 0x0216: return "ntru_hps4096821";
-  case 0x0245: return "ntru_hps40961229";
-  case 0x0217: return "ntru_hrss701";
-  case 0x0246: return "ntru_hrss1373";
-  case 0x0218: return "lightsaber";
-  case 0x0219: return "saber";
-  case 0x021A: return "firesaber";
   case 0x0238: return "bikel1";
   case 0x023B: return "bikel3";
   case 0x023E: return "kyber90s512";
@@ -497,14 +490,6 @@ static const char* OQS_CURVE_ID_NAME_STR(int id) {
   case 0x022C: return "hqc128";
   case 0x022D: return "hqc192";
   case 0x022E: return "hqc256";
-  case 0x022F: return "ntrulpr653";
-  case 0x0230: return "ntrulpr761";
-  case 0x0231: return "ntrulpr857";
-  case 0x0241: return "ntrulpr1277";
-  case 0x0232: return "sntrup653";
-  case 0x0233: return "sntrup761";
-  case 0x0234: return "sntrup857";
-  case 0x0242: return "sntrup1277";
   ///// OQS_TEMPLATE_FRAGMENT_OQS_CURVE_ID_NAME_STR_END
   ///// OQS_TEMPLATE_FRAGMENT_OQS_CURVE_ID_NAME_STR_HYBRID_START
    case 0x2F00: return "p256_frodo640aes hybrid";
@@ -516,15 +501,6 @@ static const char* OQS_CURVE_ID_NAME_STR(int id) {
    case 0x2F3A: return "p256_kyber512 hybrid";
    case 0x2F3C: return "p384_kyber768 hybrid";
    case 0x2F3D: return "p521_kyber1024 hybrid";
-   case 0x2F14: return "p256_ntru_hps2048509 hybrid";
-   case 0x2F15: return "p384_ntru_hps2048677 hybrid";
-   case 0x2F16: return "p521_ntru_hps4096821 hybrid";
-   case 0x2F45: return "p521_ntru_hps40961229 hybrid";
-   case 0x2F17: return "p384_ntru_hrss701 hybrid";
-   case 0x2F46: return "p521_ntru_hrss1373 hybrid";
-   case 0x2F18: return "p256_lightsaber hybrid";
-   case 0x2F19: return "p384_saber hybrid";
-   case 0x2F1A: return "p521_firesaber hybrid";
    case 0x2F38: return "p256_bikel1 hybrid";
    case 0x2F3B: return "p384_bikel3 hybrid";
    case 0x2F3E: return "p256_kyber90s512 hybrid";
@@ -533,14 +509,6 @@ static const char* OQS_CURVE_ID_NAME_STR(int id) {
    case 0x2F2C: return "p256_hqc128 hybrid";
    case 0x2F2D: return "p384_hqc192 hybrid";
    case 0x2F2E: return "p521_hqc256 hybrid";
-   case 0x2F2F: return "p256_ntrulpr653 hybrid";
-   case 0x2F43: return "p256_ntrulpr761 hybrid";
-   case 0x2F31: return "p384_ntrulpr857 hybrid";
-   case 0x2F41: return "p521_ntrulpr1277 hybrid";
-   case 0x2F32: return "p256_sntrup653 hybrid";
-   case 0x2F44: return "p256_sntrup761 hybrid";
-   case 0x2F34: return "p384_sntrup857 hybrid";
-   case 0x2F42: return "p521_sntrup1277 hybrid";
   ///// OQS_TEMPLATE_FRAGMENT_OQS_CURVE_ID_NAME_STR_HYBRID_END
   default: return "";
   }

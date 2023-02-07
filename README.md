@@ -39,7 +39,7 @@ Note that, referencing the terminology defined by [ETSI](https://www.etsi.org/te
 
 ## Status
 
-This fork is currently in sync with the [OpenSSL\_1\_1\_1k tag](https://github.com/openssl/openssl/tree/OpenSSL_1_1_1k), and adds the following:
+This fork is currently in sync with the [OpenSSL\_1\_1\_1s tag](https://github.com/openssl/openssl/tree/OpenSSL_1_1_1s), and adds the following:
 
 - quantum-safe key exchange in TLS 1.3
 - hybrid (quantum-safe + elliptic curve) key exchange in TLS 1.3
@@ -79,9 +79,6 @@ The following quantum-safe algorithms from liboqs are supported (assuming they h
 - **CRYSTALS-Kyber**: `kyber512`, `kyber768`, `kyber1024`, `kyber90s512`, `kyber90s768`, `kyber90s1024`
 - **FrodoKEM**: `frodo640aes`, `frodo640shake`, `frodo976aes`, `frodo976shake`, `frodo1344aes`, `frodo1344shake`
 - **HQC**: `hqc128`, `hqc192`, `hqc256`†
-- **NTRU**: `ntru_hps2048509`, `ntru_hps2048677`, `ntru_hps4096821`, `ntru_hps40961229`, `ntru_hrss701`, `ntru_hrss1373`
-- **NTRU-Prime**: `ntrulpr653`, `ntrulpr761`, `ntrulpr857`, `ntrulpr1277`, `sntrup653`, `sntrup761`, `sntrup857`, `sntrup1277`
-- **SABER**: `lightsaber`, `saber`, `firesaber`
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_KEXS_END -->
 
 If ``<KEX>`` is any of the algorithms listed above, the following hybrid algorithms are supported:
@@ -101,11 +98,9 @@ The following digital signature algorithms from liboqs are supported by the fork
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_SIGS_START -->
 - **CRYSTALS-Dilithium**:`dilithium2`\*, `dilithium3`\*, `dilithium5`\*, `dilithium2_aes`\*, `dilithium3_aes`\*, `dilithium5_aes`\*
 - **Falcon**:`falcon512`\*, `falcon1024`\*
-- **Picnic**:`picnicl1fs`, `picnicl1ur`, `picnicl1full`\*, `picnic3l1`\*, `picnic3l3`, `picnic3l5`
-- **Rainbow**:`rainbowIIIclassic`, `rainbowIIIcircumzenithal`, `rainbowIIIcompressed`, `rainbowVclassic`\*, `rainbowVcircumzenithal`, `rainbowVcompressed`
-- **SPHINCS-Haraka**:`sphincsharaka128frobust`\*, `sphincsharaka128fsimple`, `sphincsharaka128srobust`, `sphincsharaka128ssimple`, `sphincsharaka192frobust`, `sphincsharaka192fsimple`, `sphincsharaka192srobust`, `sphincsharaka192ssimple`, `sphincsharaka256frobust`, `sphincsharaka256fsimple`, `sphincsharaka256srobust`, `sphincsharaka256ssimple`
-- **SPHINCS-SHA256**:`sphincssha256128frobust`\*, `sphincssha256128fsimple`, `sphincssha256128srobust`, `sphincssha256128ssimple`, `sphincssha256192frobust`, `sphincssha256192fsimple`, `sphincssha256192srobust`, `sphincssha256192ssimple`, `sphincssha256256frobust`, `sphincssha256256fsimple`, `sphincssha256256srobust`, `sphincssha256256ssimple`
-- **SPHINCS-SHAKE256**:`sphincsshake256128frobust`\*, `sphincsshake256128fsimple`, `sphincsshake256128srobust`, `sphincsshake256128ssimple`, `sphincsshake256192frobust`, `sphincsshake256192fsimple`, `sphincsshake256192srobust`, `sphincsshake256192ssimple`, `sphincsshake256256frobust`, `sphincsshake256256fsimple`, `sphincsshake256256srobust`, `sphincsshake256256ssimple`
+- **SPHINCS-Haraka**:`sphincsharaka128frobust`\*, `sphincsharaka128fsimple`\*, `sphincsharaka128srobust`, `sphincsharaka128ssimple`, `sphincsharaka192frobust`, `sphincsharaka192fsimple`, `sphincsharaka192srobust`, `sphincsharaka192ssimple`, `sphincsharaka256frobust`, `sphincsharaka256fsimple`, `sphincsharaka256srobust`, `sphincsharaka256ssimple`
+- **SPHINCS-SHA256**:`sphincssha256128frobust`\*, `sphincssha256128fsimple`, `sphincssha256128srobust`, `sphincssha256128ssimple`\*, `sphincssha256192frobust`, `sphincssha256192fsimple`, `sphincssha256192srobust`, `sphincssha256192ssimple`, `sphincssha256256frobust`, `sphincssha256256fsimple`, `sphincssha256256srobust`, `sphincssha256256ssimple`
+- **SPHINCS-SHAKE256**:`sphincsshake256128frobust`, `sphincsshake256128fsimple`\*, `sphincsshake256128srobust`, `sphincsshake256128ssimple`, `sphincsshake256192frobust`, `sphincsshake256192fsimple`, `sphincsshake256192srobust`, `sphincsshake256192ssimple`, `sphincsshake256256frobust`, `sphincsshake256256fsimple`, `sphincsshake256256srobust`, `sphincsshake256256ssimple`
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_SIGS_END -->
 
 The following hybrid algorithms are supported; they combine a quantum-safe algorithm listed above with a traditional digital signature algorithm (`<SIG>` is any one of the algorithms listed above):
@@ -332,7 +327,7 @@ Contributors to OQS-OpenSSL\_1\_1\_1 include:
 - Dimitris Sikeridis (University of New Mexico / Cisco Systems)
 - Douglas Stebila (University of Waterloo)
 - Goutam Tamvada (University of Waterloo)
-- Michael Baentsch (IBM Research Zurich)
+- Michael Baentsch (baentsch.ch)
 
 ## Acknowledgments
 
