@@ -1537,11 +1537,116 @@ static int pkey_oqs_sign_init(EVP_PKEY_CTX *ctx) {
 }
 
 static int pkey_oqs_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
-                               size_t *siglen, const unsigned char *tbs,
-                               size_t tbslen)
+                         size_t *siglen, const unsigned char *tbs,
+                         size_t tbslen)
 {
-   printf("oqs sign without digest auto fail\n");
-   return 0;
+  const OQS_KEY *oqs_key = (OQS_KEY*) ctx->pkey->pkey.ptr;
+  EVP_PKEY_CTX *classical_ctx_sign = NULL;
+
+  int is_hybrid = is_oqs_hybrid_alg(oqs_key->nid);
+  int classical_id = 0;
+  size_t max_sig_len = oqs_key->s->length_signature;
+  size_t classical_sig_len = 0, oqs_sig_len = 0;
+  size_t actual_classical_sig_len = 0;
+  size_t index = 0;
+  int rv = 0;
+
+  if (!oqs_key || !oqs_key->s || !oqs_key->privkey || (is_hybrid && !oqs_key->classical_pkey)) {
+    ECerr(EC_F_PKEY_OQS_DIGESTSIGN, EC_R_NO_PRIVATE_KEY);
+    return rv;
+  }
+
+  if (is_hybrid) {
+    classical_id = get_classical_nid(oqs_key->nid);
+    actual_classical_sig_len = get_classical_sig_len(classical_id);
+    max_sig_len += (SIZE_OF_UINT32 + actual_classical_sig_len);
+  }
+
+  if (sig == NULL) {
+    /* we only return the sig len */
+    *siglen = max_sig_len;
+    return 1;
+  }
+
+  if (*siglen < max_sig_len) {
+      ECerr(EC_F_PKEY_OQS_DIGESTSIGN, EC_R_BUFFER_LENGTH_WRONG);
+      return rv;
+  }
+
+  if (is_hybrid) {
+    const EVP_MD *classical_md;
+    int digest_len;
+    unsigned char digest[SHA512_DIGEST_LENGTH]; /* init with max length */
+
+    if ((classical_ctx_sign = EVP_PKEY_CTX_new(oqs_key->classical_pkey, NULL)) == NULL ||
+         EVP_PKEY_sign_init(classical_ctx_sign) <= 0) {
+      ECerr(EC_F_PKEY_OQS_DIGESTSIGN, ERR_R_FATAL);
+      goto end;
+    }
+
+    if (classical_id == EVP_PKEY_RSA) {
+      if (EVP_PKEY_CTX_set_rsa_padding(classical_ctx_sign, RSA_PKCS1_PADDING) <= 0) {
+        ECerr(EC_F_PKEY_OQS_DIGESTSIGN, ERR_R_FATAL);
+        goto end;
+      }
+    }
+
+    /* classical schemes can't sign arbitrarily large data; we hash it first */
+    switch (oqs_key->s->claimed_nist_level) {
+      case 1:
+        classical_md = EVP_sha256();
+        digest_len = SHA256_DIGEST_LENGTH;
+        SHA256(tbs, tbslen, (unsigned char*) &digest);
+        break;
+
+      case 2:
+      case 3:
+        classical_md = EVP_sha384();
+        digest_len = SHA384_DIGEST_LENGTH;
+        SHA384(tbs, tbslen, (unsigned char*) &digest);
+        break;
+      case 4:
+      case 5:
+      default:
+        classical_md = EVP_sha512();
+        digest_len = SHA512_DIGEST_LENGTH;
+        SHA512(tbs, tbslen, (unsigned char*) &digest);
+        break;
+    }
+
+    if (EVP_PKEY_CTX_set_signature_md(classical_ctx_sign, classical_md) <= 0) {
+      ECerr(EC_F_PKEY_OQS_DIGESTSIGN, ERR_R_FATAL);
+      goto end;
+    }
+
+    if (EVP_PKEY_sign(classical_ctx_sign, sig + SIZE_OF_UINT32, &actual_classical_sig_len, digest, digest_len) <= 0) {
+      ECerr(EC_F_PKEY_OQS_DIGESTSIGN, EC_R_SIGNING_FAILED);
+      goto end;
+    }
+
+    if (actual_classical_sig_len > (size_t) get_classical_sig_len(classical_id)) {
+      /* sig is bigger than expected! */
+      ECerr(EC_F_PKEY_OQS_DIGESTSIGN, EC_R_BUFFER_LENGTH_WRONG);
+      goto end;
+    }
+    ENCODE_UINT32(sig, actual_classical_sig_len);
+    classical_sig_len = SIZE_OF_UINT32 + actual_classical_sig_len;
+    index += classical_sig_len;
+  }
+
+  if (OQS_SIG_sign(oqs_key->s, sig + index, &oqs_sig_len, tbs, tbslen, oqs_key->privkey) != OQS_SUCCESS) {
+    ECerr(EC_F_PKEY_OQS_DIGESTSIGN, EC_R_SIGNING_FAILED);
+    return 0;
+  }
+  *siglen = classical_sig_len + oqs_sig_len;
+
+  rv = 1; /* success */
+
+ end:
+    if (classical_ctx_sign) {
+      EVP_PKEY_CTX_free(classical_ctx_sign);
+    }
+    return rv;
 }
 
 static int oqs_int_update(EVP_MD_CTX *ctx, const void *data, size_t count)
@@ -1621,8 +1726,92 @@ static int pkey_oqs_verify_init(EVP_PKEY_CTX *ctx) {
 static int pkey_oqs_verify(EVP_PKEY_CTX *ctx,
                    const unsigned char *sig, size_t siglen,
                    const unsigned char *tbs, size_t tbslen) {
-	printf("oqs verify auto fail without digest\n");
-	return 0;
+
+	const OQS_KEY *oqs_key = (OQS_KEY*) ctx->pkey->pkey.ptr;
+  int is_hybrid = is_oqs_hybrid_alg(oqs_key->nid);
+  int classical_id = 0;
+  size_t classical_sig_len = 0;
+  size_t index = 0;
+
+  if (!oqs_key || !oqs_key->s  || !oqs_key->pubkey || (is_hybrid && !oqs_key->classical_pkey) ||
+	     sig == NULL || tbs == NULL) {
+    ECerr(EC_F_PKEY_OQS_DIGESTVERIFY, EC_R_WRONG_PARAMETERS);
+    return 0;
+  }
+
+  if (is_hybrid) {
+    classical_id = get_classical_nid(oqs_key->nid);
+  }
+
+  if (is_hybrid) {
+    EVP_PKEY_CTX *ctx_verify = NULL;
+    const EVP_MD *classical_md;
+    size_t actual_classical_sig_len = 0;
+    int digest_len;
+    unsigned char digest[SHA512_DIGEST_LENGTH]; /* init with max length */
+
+    if ((ctx_verify = EVP_PKEY_CTX_new(oqs_key->classical_pkey, NULL)) == NULL ||
+         EVP_PKEY_verify_init(ctx_verify) <= 0) {
+      ECerr(EC_F_PKEY_OQS_DIGESTVERIFY, ERR_R_FATAL);
+      EVP_PKEY_CTX_free(ctx_verify);
+      return 0;
+    }
+
+    if (classical_id == EVP_PKEY_RSA) {
+      if (EVP_PKEY_CTX_set_rsa_padding(ctx_verify, RSA_PKCS1_PADDING) <= 0) {
+        ECerr(EC_F_PKEY_OQS_DIGESTVERIFY, ERR_R_FATAL);
+        EVP_PKEY_CTX_free(ctx_verify);
+        return 0;
+      }
+    }
+
+    DECODE_UINT32(actual_classical_sig_len, sig);
+    
+    /* classical schemes can't sign arbitrarily large data; we hash it first */
+    switch (oqs_key->s->claimed_nist_level) {
+      case 1:
+        classical_md = EVP_sha256();
+        digest_len = SHA256_DIGEST_LENGTH;
+        SHA256(tbs, tbslen, (unsigned char*) &digest);
+        break;
+
+    case 2:
+    case 3:
+      classical_md = EVP_sha384();
+      digest_len = SHA384_DIGEST_LENGTH;
+      SHA384(tbs, tbslen, (unsigned char*) &digest);
+      break;
+
+    case 4:
+    case 5:
+    default:
+      classical_md = EVP_sha512();
+      digest_len = SHA512_DIGEST_LENGTH;
+      SHA512(tbs, tbslen, (unsigned char*) &digest);
+      break;
+    }
+
+    if (EVP_PKEY_CTX_set_signature_md(ctx_verify, classical_md) <= 0) {
+      ECerr(EC_F_PKEY_OQS_DIGESTVERIFY, ERR_R_FATAL);
+      return 0;
+    }
+
+    if (EVP_PKEY_verify(ctx_verify, sig + SIZE_OF_UINT32, actual_classical_sig_len, digest, digest_len) <= 0) {
+      ECerr(EC_F_PKEY_OQS_DIGESTVERIFY, EC_R_VERIFICATION_FAILED);
+      return 0;
+    }
+
+    classical_sig_len = SIZE_OF_UINT32 + actual_classical_sig_len;
+    index += classical_sig_len;
+    EVP_PKEY_CTX_free(ctx_verify);
+  }
+
+  if (OQS_SIG_verify(oqs_key->s, tbs, tbslen, sig + index, siglen - classical_sig_len, oqs_key->pubkey) != OQS_SUCCESS) {
+    ECerr(EC_F_PKEY_OQS_DIGESTVERIFY, EC_R_VERIFICATION_FAILED);
+    return 0;
+  }
+
+  return 1;
 }
 
 static int pkey_oqs_verifyctx_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx) {
