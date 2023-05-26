@@ -39,7 +39,7 @@ Note that, referencing the terminology defined by [ETSI](https://www.etsi.org/te
 
 ## Status
 
-This fork is currently in sync with the [OpenSSL\_1\_1\_1s tag](https://github.com/openssl/openssl/tree/OpenSSL_1_1_1s), and adds the following:
+This fork is currently in sync with the [OpenSSL\_1\_1\_1t tag](https://github.com/openssl/openssl/tree/OpenSSL_1_1_1t), and adds the following:
 
 - quantum-safe key exchange in TLS 1.3
 - hybrid (quantum-safe + elliptic curve) key exchange in TLS 1.3
@@ -75,8 +75,8 @@ If an algorithm is provided by liboqs but is not listed below, it might still be
 The following quantum-safe algorithms from liboqs are supported (assuming they have been enabled in liboqs):
 
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_KEXS_START -->
-- **BIKE**: `bikel1`, `bikel3`
-- **CRYSTALS-Kyber**: `kyber512`, `kyber768`, `kyber1024`, `kyber90s512`, `kyber90s768`, `kyber90s1024`
+- **BIKE**: `bikel1`, `bikel3`, `bikel5`
+- **CRYSTALS-Kyber**: `kyber512`, `kyber768`, `kyber1024`
 - **FrodoKEM**: `frodo640aes`, `frodo640shake`, `frodo976aes`, `frodo976shake`, `frodo1344aes`, `frodo1344shake`
 - **HQC**: `hqc128`, `hqc192`, `hqc256`†
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_KEXS_END -->
@@ -96,11 +96,10 @@ Note that algorithms marked with a dagger (†) have large stack usage and may c
 The following digital signature algorithms from liboqs are supported by the fork. **Note that not all variants of all algorithms are enabled by default; algorithms that are enabled by default are marked with an asterisk, and should you wish to enable additional variants, consult [the "Code Generation" section of the documentation in the wiki](https://github.com/open-quantum-safe/openssl/wiki/Using-liboqs-algorithms-not-in-the-fork#code-generation)**.
 
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_SIGS_START -->
-- **CRYSTALS-Dilithium**:`dilithium2`\*, `dilithium3`\*, `dilithium5`\*, `dilithium2_aes`\*, `dilithium3_aes`\*, `dilithium5_aes`\*
+- **CRYSTALS-Dilithium**:`dilithium2`\*, `dilithium3`\*, `dilithium5`\*
 - **Falcon**:`falcon512`\*, `falcon1024`\*
-- **SPHINCS-Haraka**:`sphincsharaka128frobust`\*, `sphincsharaka128fsimple`\*, `sphincsharaka128srobust`, `sphincsharaka128ssimple`, `sphincsharaka192frobust`, `sphincsharaka192fsimple`, `sphincsharaka192srobust`, `sphincsharaka192ssimple`, `sphincsharaka256frobust`, `sphincsharaka256fsimple`, `sphincsharaka256srobust`, `sphincsharaka256ssimple`
-- **SPHINCS-SHA256**:`sphincssha256128frobust`\*, `sphincssha256128fsimple`, `sphincssha256128srobust`, `sphincssha256128ssimple`\*, `sphincssha256192frobust`, `sphincssha256192fsimple`, `sphincssha256192srobust`, `sphincssha256192ssimple`, `sphincssha256256frobust`, `sphincssha256256fsimple`, `sphincssha256256srobust`, `sphincssha256256ssimple`
-- **SPHINCS-SHAKE256**:`sphincsshake256128frobust`, `sphincsshake256128fsimple`\*, `sphincsshake256128srobust`, `sphincsshake256128ssimple`, `sphincsshake256192frobust`, `sphincsshake256192fsimple`, `sphincsshake256192srobust`, `sphincsshake256192ssimple`, `sphincsshake256256frobust`, `sphincsshake256256fsimple`, `sphincsshake256256srobust`, `sphincsshake256256ssimple`
+- **SPHINCS-SHA2**:`sphincssha2128fsimple`\*, `sphincssha2128ssimple`\*, `sphincssha2192fsimple`\*, `sphincssha2192ssimple`, `sphincssha2256fsimple`, `sphincssha2256ssimple`
+- **SPHINCS-SHAKE**:`sphincsshake128fsimple`\*, `sphincsshake128ssimple`, `sphincsshake192fsimple`, `sphincsshake192ssimple`, `sphincsshake256fsimple`, `sphincsshake256ssimple`
 <!--- OQS_TEMPLATE_FRAGMENT_LIST_SIGS_END -->
 
 The following hybrid algorithms are supported; they combine a quantum-safe algorithm listed above with a traditional digital signature algorithm (`<SIG>` is any one of the algorithms listed above):
@@ -147,6 +146,8 @@ The following instructions will download and build liboqs, then install it into 
 	ninja install
 
 Building liboqs requires your system to have (a standard) OpenSSL already installed. `configure` will detect it if it is located in a standard location, such as `/usr` or `/usr/local/opt/openssl` (for brew on macOS).  Otherwise, you may need to specify it with `-DOPENSSL_ROOT_DIR=<path-to-system-openssl-dir>` added to the `cmake` command.
+
+*Note*: This will only work correctly, if the OpenSSL version used to build `liboqs` is a version below 3.0.0. If the standard OpenSSL on the build system or the version pointed to by the above `-DOPENSSL_ROOT_DIR=...` command is a version >= 3.0.0, then you _must_ add the option `-DOQS_USE_OPENSSL=OFF` to the above `cmake` build command to successfully complete the subsequent build steps for this package.
 
 #### Step 2: Build the fork
 
